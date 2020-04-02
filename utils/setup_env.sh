@@ -11,7 +11,6 @@ PIP_URL="https://bootstrap.pypa.io/get-pip.py"
 
 function install_dependencies {
     apt update -y
-    apt upgrade -y
     apt install -y python3 python3-distutils wget git nano unzip curl
 
     wget "$PIP_URL" -O /tmp/get-pip.py
