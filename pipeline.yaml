@@ -28,4 +28,4 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          python3 ./main.py --config_path $CONFIGPATH_SECUREFILEPATH --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }}
+          python3 ./runner.py --config_path $CONFIGPATH_SECUREFILEPATH --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }}
