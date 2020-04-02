@@ -1,0 +1,31 @@
+# File: simple-param.yml
+parameters:
+- name: CONFIG_FILE # name of the parameter; required
+  type: string
+  default: config.json
+- name: INFRASTRUCTURE
+  type: string
+  default: azure-simple-rg
+
+trigger: none
+
+jobs:
+- job: build
+  displayName: build
+  pool: 
+    vmImage: ubuntu-18.04
+  steps:
+    - task: DownloadSecureFile@1
+      name: configPath
+      inputs:
+        secureFile: ${{ parameters.CONFIG_FILE }}
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          sudo bash ./utils/setup_env.sh
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          python3 ./main.py --config_path $CONFIGPATH_SECUREFILEPATH --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }}
