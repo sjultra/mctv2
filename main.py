@@ -40,7 +40,7 @@ def deploy_infrastructure(config, workspace):
     tf_controller.init(capture_output=False)
     tf_controller.plan(capture_output=False)
     tf_controller.apply(capture_output=False, skip_plan=True)
-    tf_controller.destroy(capture_output=False, force=IsNotFlagged)
+    tf_controller.destroy(capture_output=False)
 
 
 if __name__ == "__main__":
