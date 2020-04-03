@@ -1,7 +1,7 @@
 from python_terraform import *
+from mct_config import Configuration 
 import argparse
 import os
-import json
 
 def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
@@ -24,18 +24,20 @@ def check_parameters(parameters):
     if not os.path.isdir(parameters.terraform_workspace):
         raise Exception("File {} does not exist".format(parameters.terraform_workspace))
 
-    return parameters    
+    return parameters
 
-def get_config(config_path):
-    config_file = open(config_path)
-    
-    json_content = config_file.read()
-    content = json.loads(json_content)
+def config_azure_env(secrets):
+    os.environ["ARM_CLIENT_ID"] = secrets["azure"]["client-id"]
+    os.environ["ARM_CLIENT_SECRET"] = secrets["azure"]["client-secret"]
+    os.environ["ARM_SUBSCRIPTION_ID"] = secrets["azure"]["subscription-id"]
+    os.environ["ARM_TENANT_ID"] = secrets["azure"]["tenant-id"]
 
-    return content
 
-def deploy_infrastructure(config, workspace):
-    tf_controller = Terraform(working_dir=workspace, variables=config["parameters"])
+def deploy_infrastructure(secrets, config, workspace):
+    config_azure_env(secrets)
+
+    tf_controller = Terraform(working_dir=workspace, 
+                              variables=config["parameters"])
 
     tf_controller.init(capture_output=False)
     tf_controller.plan(capture_output=False)
@@ -46,7 +48,9 @@ def deploy_infrastructure(config, workspace):
 if __name__ == "__main__":
     parameters = get_parameters()
     parameters = check_parameters(parameters)
+    
+    config = Configuration(parameters.config_path)
 
-    config = get_config(parameters.config_path)
-
-    output = deploy_infrastructure(config["terraform"], parameters.terraform_workspace)
+    output = deploy_infrastructure(config.content["secrets"], 
+                                   config.content["terraform"], 
+                                   parameters.terraform_workspace)
