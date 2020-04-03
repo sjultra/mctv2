@@ -27,7 +27,7 @@ function install_terraform {
 }
 
 function prepare_python_env {
-    pip install python-terraform
+    pip install python-terraform azure.identity azure-keyvault-secrets
 }
 
 function main {
