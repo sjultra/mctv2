@@ -28,6 +28,7 @@ sudo bash ./utils/setup_env.sh
             "tenant-id": ""
         }
     },
+    "steps": ["deploy", "destroy"],
     "terraform": {
         "parameters": {
             "test_parameter": "XXXXXXXXX"
@@ -37,7 +38,7 @@ sudo bash ./utils/setup_env.sh
 ```
 3. Run MCTv2:
 ```
-python3 main.py --config_path "./config.json" --terraform_workspace "./test-infra/azure-simple-rg/"
+python3 main.py --config_path "./config.json" --terraform_workspace "./test-infra/azure-simple-rg/" --steps "deploy,destroy"
 ```
 
 ## Configuration

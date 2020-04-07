@@ -3,10 +3,11 @@ import importlib
 from secret_provider import *
 
 class Configuration:
-    def __init__(self, config_path):
+    def __init__(self, config_path, parameters):
         self.__config_path = config_path
         self.__parse_config()
         self.__resolve_secrets()
+        self.__replace_parameters(parameters)
     
     def __parse_config(self):
         config_file = open(self.__config_path)
@@ -27,4 +28,7 @@ class Configuration:
                     key_name = category + '-' + key
                     self.content["secrets"][category][key] = remote_secrets.get_secret(key_name).value
 
+    def __replace_parameters(self, parameters):
+        if parameters.steps:
+            self.content["steps"] = parameters.steps.split(",")
     

@@ -8,6 +8,7 @@ def get_parameters():
 
     parser.add_argument('--config_path')
     parser.add_argument('--terraform_workspace')
+    parser.add_argument('--steps')
 
     return parser.parse_args()
 
@@ -33,24 +34,28 @@ def config_azure_env(secrets):
     os.environ["ARM_TENANT_ID"] = secrets["azure"]["tenant-id"]
 
 
-def deploy_infrastructure(secrets, config, workspace):
+def deploy_infrastructure(secrets, steps, config, workspace):
     config_azure_env(secrets)
 
     tf_controller = Terraform(working_dir=workspace, 
                               variables=config["parameters"])
 
-    tf_controller.init(capture_output=False)
-    tf_controller.plan(capture_output=False)
-    tf_controller.apply(capture_output=False, skip_plan=True)
-    tf_controller.destroy(capture_output=False)
+    if "deploy" in steps:
+        tf_controller.init(capture_output=False)
+        tf_controller.plan(capture_output=False)
+        tf_controller.apply(capture_output=False, skip_plan=True)
+
+    if "destroy" in steps:
+        tf_controller.destroy(capture_output=False)
 
 
 if __name__ == "__main__":
     parameters = get_parameters()
     parameters = check_parameters(parameters)
     
-    config = Configuration(parameters.config_path)
+    config = Configuration(parameters.config_path, parameters)
 
-    output = deploy_infrastructure(config.content["secrets"], 
+    output = deploy_infrastructure(config.content["secrets"],
+                                   config.content["steps"],
                                    config.content["terraform"], 
                                    parameters.terraform_workspace)
