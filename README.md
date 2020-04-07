@@ -11,12 +11,26 @@ sudo bash ./utils/setup_env.sh
 2. Create json config file. Example: 
 ```
 {
+    "secret_provider": {
+        "name": "AzureKeyVault",
+        "credentials": {
+            "azure_keyvault_url": "https://test-vault.vault.azure.net/",
+            "azure_client_id": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "azure_client_secret": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "azure_tenant_id": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        }
+    },
+    "secrets": {
+        "azure": {
+            "subscription-id": "",
+            "client-id": "",
+            "client-secret": "",
+            "tenant-id": ""
+        }
+    },
     "terraform": {
         "parameters": {
-            "azure_subscription_id": "XXXXXXXXXXXXXXXXXXXXXXX",
-            "azure_client_id": "XXXXXXXXXXXXXXXXXXXXXXX",
-            "azure_client_secret": "XXXXXXXXXXXXXXXXXXXXXXX",
-            "azure_tenant_id": "XXXXXXXXXXXXXXXXXXXXXXX"
+            "test_parameter": "XXXXXXXXX"
         }
     }
 }
