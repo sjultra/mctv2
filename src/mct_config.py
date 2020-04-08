@@ -31,4 +31,7 @@ class Configuration:
     def __replace_parameters(self, parameters):
         if parameters.steps:
             self.content["steps"] = parameters.steps.split(",")
+
+        if parameters.id:
+            self.content["deployment_id"] = parameters.id
     

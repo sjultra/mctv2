@@ -1,11 +1,13 @@
 # File: simple-param.yml
 parameters:
+- name: ID
+  type: string
 - name: CONFIG_FILE # name of the parameter; required
   type: string
-  default: config.json
+  default: backend-config.json
 - name: INFRASTRUCTURE
   type: string
-  default: azure-simple-rg
+  default: azure-backend-test
 - name: STEPS
   type: string
   default: deploy,destroy
@@ -31,4 +33,4 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          python3 ./src/runner.py --config_path $CONFIGPATH_SECUREFILEPATH --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }} --steps ${{ parameters.STEPS }}
+          python3 ./src/runner.py --config_path $CONFIGPATH_SECUREFILEPATH --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }} --steps ${{ parameters.STEPS }} --id ${{ parameters.ID }}
