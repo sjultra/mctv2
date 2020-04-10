@@ -7,24 +7,34 @@ def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
 
     parser.add_argument('--config_path')
+    parser.add_argument('--secrets_path')
     parser.add_argument('--terraform_workspace')
     parser.add_argument('--steps')
     parser.add_argument('--id')
+    parser.add_argument('--custom_fields')
 
     return parser.parse_args()
 
 def check_parameters(parameters):
     if not parameters.id:
         raise Exception("id parameter is empty")
+
     if not parameters.config_path:
         raise Exception("config_path parameter is empty")
     parameters.config_path = os.path.abspath(parameters.config_path)
+
+    if not parameters.secrets_path:
+        raise Exception("secrets_path parameter is empty")
+    parameters.secrets_path = os.path.abspath(parameters.secrets_path)
+
     if not parameters.terraform_workspace:
         raise Exception("terraform_workspace parameter is empty")
     parameters.terraform_workspace = os.path.abspath(parameters.terraform_workspace)
 
     if not os.path.isfile(parameters.config_path):
         raise Exception("File {} does not exist".format(parameters.config_path))
+    if not os.path.isfile(parameters.secrets_path):
+        raise Exception("File {} does not exist".format(parameters.secrets_path))
     if not os.path.isdir(parameters.terraform_workspace):
         raise Exception("File {} does not exist".format(parameters.terraform_workspace))
 
@@ -36,6 +46,9 @@ def config_azure_env(secrets):
     os.environ["ARM_SUBSCRIPTION_ID"] = secrets["azure"]["subscription-id"]
     os.environ["ARM_TENANT_ID"] = secrets["azure"]["tenant-id"]
 
+def config_gcp_env(secrets):
+    os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = secrets["gcp"]["key-path"]
+
 def get_azure_backend_config(key, secrets):
     return {"storage_account_name": secrets["storage-account-name"], 
             "container_name": secrets["storage-account-container"], 
@@ -45,6 +58,7 @@ def get_azure_backend_config(key, secrets):
 
 def deploy_infrastructure(id, secrets, steps, config, workspace):
     config_azure_env(secrets)
+    config_gcp_env(secrets)
 
     tf_controller = Terraform(working_dir=workspace, 
                               variables=config["parameters"])
@@ -75,7 +89,7 @@ if __name__ == "__main__":
     parameters = get_parameters()
     parameters = check_parameters(parameters)
     
-    config = Configuration(parameters.config_path, parameters)
+    config = Configuration(parameters.config_path, parameters.secrets_path, parameters)
 
     output = deploy_infrastructure(config.content["deployment_id"],
                                    config.content["secrets"],
