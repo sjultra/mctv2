@@ -2,6 +2,7 @@ from python_terraform import *
 from mct_config import Configuration 
 import argparse
 import os
+import base64
 
 def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
@@ -47,7 +48,9 @@ def config_azure_env(secrets):
     os.environ["ARM_TENANT_ID"] = secrets["azure"]["tenant-id"]
 
 def config_gcp_env(secrets):
-    os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = secrets["gcp"]["key-path"]
+    with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
+        gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
+    os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = '/tmp/gcp_credentials.json'
 
 def get_azure_backend_config(key, secrets):
     return {"storage_account_name": secrets["storage-account-name"], 

@@ -2,6 +2,7 @@ import json
 import importlib
 from secret_provider import *
 
+
 def add_dict_value(dictionary, path, value):
     if len(path) > 1:
         if path[0] not in dictionary.keys():
