@@ -1,0 +1,17 @@
+{
+    "deployment_id": "",
+    "steps": ["deploy", "destroy"],
+    "terraform": {
+        "backend": {
+            "type": "azurerm",
+            "key": "mct-dev/"
+        },
+        "parameters": {
+            "gcp_project_name": "newmctproject",
+            "gcp_project_id": "newmctproject",
+            "gcp_organization_id": "",
+            "gcp_billing_account": "",
+            "gcp_service_account": "mct-test"
+        }
+    }
+}
