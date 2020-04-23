@@ -1,14 +1,20 @@
-# File: simple-param.yml
 parameters:
-- name: CONFIG_FILE # name of the parameter; required
+- name: ID
   type: string
-  default: config.json
+- name: SECRETS_FILE 
+  type: string
+  default: secrets.json
+- name: CONFIG_FILE_URL
+  type: string
 - name: INFRASTRUCTURE
   type: string
-  default: azure-simple-rg
+  default: azure-backend-test
 - name: STEPS
   type: string
   default: deploy,destroy
+- name: CUSTOM_FIELDS
+  type: string
+  default: none
 
 trigger: none
 
@@ -19,9 +25,13 @@ jobs:
     vmImage: ubuntu-18.04
   steps:
     - task: DownloadSecureFile@1
-      name: configPath
+      name: secretsPath
       inputs:
-        secureFile: ${{ parameters.CONFIG_FILE }}
+        secureFile: ${{ parameters.SECRETS_FILE }}
+    - task: DownloadSecureFile@1
+      name: gcpSecret
+      inputs:
+        secureFile: gcp-seed-sa.json
     - task: Bash@3
       inputs:
         targetType: 'inline'
@@ -31,4 +41,18 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          python3 ./src/runner.py --config_path $CONFIGPATH_SECUREFILEPATH --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }} --steps ${{ parameters.STEPS }}
+          wget ${{ parameters.CONFIG_FILE_URL }} -O /tmp/config.json
+          if [[ "${{ parameters.CUSTOM_FIELDS }}" != "none" ]];then
+              param_fields=";${{ parameters.CUSTOM_FIELDS }}"
+          fi
+
+          CUSTOM_FIELDS="secrets.gcp.key-path=$GCPSECRET_SECUREFILEPATH$param_fields"
+          echo $CUSTOM_FIELDS
+
+          python3 ./src/runner.py \
+                --secrets_path $SECRETSPATH_SECUREFILEPATH \
+                --config_path /tmp/config.json \
+                --terraform_workspace ./test-infra/${{ parameters.INFRASTRUCTURE }} \
+                --steps ${{ parameters.STEPS }} \
+                --id ${{ parameters.ID }} \
+                --custom_fields "$CUSTOM_FIELDS"

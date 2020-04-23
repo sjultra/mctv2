@@ -1,0 +1,13 @@
+{
+    "deployment_id": "",
+    "steps": ["deploy", "destroy"],
+    "terraform": {
+        "backend": {
+            "type": "azurerm",
+            "key": "mct-dev/"
+        },
+        "parameters": {
+            "azure_rg_name": "mct-test-rg"
+        }
+    }
+}
