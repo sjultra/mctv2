@@ -31,6 +31,7 @@ function prepare_python_env {
 }
 
 function main {
+    echo "testi"
     install_dependencies
 
     install_terraform
