@@ -1,8 +1,9 @@
-from python_terraform import *
-from mct_config import Configuration 
+from python_terraform import Terraform
+from mct_config import Configuration
 import argparse
 import os
 import base64
+
 
 def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
@@ -15,6 +16,7 @@ def get_parameters():
     parser.add_argument('--custom_fields')
 
     return parser.parse_args()
+
 
 def check_parameters(parameters):
     if not parameters.id:
@@ -41,21 +43,24 @@ def check_parameters(parameters):
 
     return parameters
 
+
 def config_azure_env(secrets):
     os.environ["ARM_CLIENT_ID"] = secrets["azure"]["client-id"]
     os.environ["ARM_CLIENT_SECRET"] = secrets["azure"]["client-secret"]
     os.environ["ARM_SUBSCRIPTION_ID"] = secrets["azure"]["subscription-id"]
     os.environ["ARM_TENANT_ID"] = secrets["azure"]["tenant-id"]
 
+
 def config_gcp_env(secrets):
     with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
         gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
     os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = '/tmp/gcp_credentials.json'
 
+
 def get_azure_backend_config(key, secrets):
-    return {"storage_account_name": secrets["storage-account-name"], 
-            "container_name": secrets["storage-account-container"], 
-            "key": key, 
+    return {"storage_account_name": secrets["storage-account-name"],
+            "container_name": secrets["storage-account-container"],
+            "key": key,
             "sas_token": secrets["storage-account-sas"]}
 
 
@@ -63,18 +68,18 @@ def deploy_infrastructure(id, secrets, steps, config, workspace):
     config_azure_env(secrets)
     config_gcp_env(secrets)
 
-    tf_controller = Terraform(working_dir=workspace, 
+    tf_controller = Terraform(working_dir=workspace,
                               variables=config["parameters"])
 
     backend_config = None
     if "backend" in config.keys():
         backend_config = get_azure_backend_config(config["backend"]["key"], secrets["azurerm-backend"])
     tf_controller.init(capture_output=False, backend_config=backend_config)
-    
+
     workspace_list = tf_controller.cmd('workspace', 'list')[1]
     workspace_list = workspace_list.replace('\n', '').replace('*', '').split()
 
-    if not id in workspace_list:
+    if id not in workspace_list:
         tf_controller.create_workspace(id)
 
     tf_controller.set_workspace(id)
@@ -91,11 +96,11 @@ def deploy_infrastructure(id, secrets, steps, config, workspace):
 if __name__ == "__main__":
     parameters = get_parameters()
     parameters = check_parameters(parameters)
-    
+
     config = Configuration(parameters.config_path, parameters.secrets_path, parameters)
 
     output = deploy_infrastructure(config.content["deployment_id"],
                                    config.content["secrets"],
                                    config.content["steps"],
-                                   config.content["terraform"], 
+                                   config.content["terraform"],
                                    parameters.terraform_workspace)
