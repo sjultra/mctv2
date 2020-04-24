@@ -1,0 +1,4 @@
+python-terraform
+azure.identity
+azure-keyvault-secrets
+flake8
