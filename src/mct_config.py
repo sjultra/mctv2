@@ -1,6 +1,5 @@
 import json
-import importlib
-from secret_provider import *
+from secret_provider import AzureKeyVault
 
 
 def add_dict_value(dictionary, path, value):
@@ -10,8 +9,9 @@ def add_dict_value(dictionary, path, value):
         add_dict_value(dictionary[path[0]], path[1:], value)
     else:
         dictionary[path[0]] = value
-    
+
     return dictionary
+
 
 class Configuration:
     def __init__(self, config_path, secrets_path, parameters):
@@ -24,14 +24,14 @@ class Configuration:
         self.__resolve_custom_fields(parameters)
         self.__resolve_secrets()
         self.__replace_parameters(parameters)
-    
+
     def __parse_config(self):
         config_file = open(self.__config_path)
         secrets_file = open(self.__secrets_path)
-    
+
         json_config = config_file.read()
         json_secrets = secrets_file.read()
-        
+
         self.content.update(json.loads(json_secrets))
         self.content.update(json.loads(json_config))
 
@@ -46,14 +46,13 @@ class Configuration:
             if path and value:
                 self.content = add_dict_value(self.content, path, value)
 
-
     def __resolve_secrets(self):
-        if not "secret_provider" in self.content:
+        if "secret_provider" not in self.content:
             print("Warning: Cannot find remote secret provider configuration. Trying to find secrets in config")
             return
-        
+
         remote_secrets = AzureKeyVault(self.content["secret_provider"])
-        
+
         for category in self.content["secrets"].keys():
             for key in self.content["secrets"][category].keys():
                 if not self.content["secrets"][category][key]:
@@ -66,4 +65,3 @@ class Configuration:
 
         if parameters.id:
             self.content["deployment_id"] = parameters.id
-    
