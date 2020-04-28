@@ -12,7 +12,11 @@ sudo bash ./utils/setup_env.sh
 ```
 {
     "deployment_id": "",
-    "steps": ["deploy", "destroy"],
+    "steps": ["prepare", "deploy", "cleanup", "destroy"],
+    "prepare": {
+        "script": "/path/to/script.sh",
+        "parameters": "--param 'test'"
+    },
     "terraform": {
         "backend": {
             "type": "azurerm",
@@ -21,6 +25,10 @@ sudo bash ./utils/setup_env.sh
         "parameters": {
             "test_param": "ZZZZZZZZZZZZZ"
         }
+    },
+    "cleanup": {
+        "script": "/path/to/cleanup/script.sh",
+        "parameters": "--param test"
     }
 }
 ```

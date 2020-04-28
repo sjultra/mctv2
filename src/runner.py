@@ -1,5 +1,6 @@
 from python_terraform import Terraform
 from mct_config import Configuration
+from script_exec import ScriptExecutor
 import argparse
 import os
 import base64
@@ -99,8 +100,16 @@ if __name__ == "__main__":
 
     config = Configuration(parameters.config_path, parameters.secrets_path, parameters)
 
-    output = deploy_infrastructure(config.content["deployment_id"],
-                                   config.content["secrets"],
-                                   config.content["steps"],
-                                   config.content["terraform"],
-                                   parameters.terraform_workspace)
+    if "prepare" in config.content["steps"] and "prepare" in config.content.keys():
+        executor = ScriptExecutor(config.content["prepare"])
+        executor.exec()
+
+    deploy_infrastructure(config.content["deployment_id"],
+                          config.content["secrets"],
+                          config.content["steps"],
+                          config.content["terraform"],
+                          parameters.terraform_workspace)
+
+    if "cleanup" in config.content["steps"] and "cleanup" in config.content.keys():
+        executor = ScriptExecutor(config.content["prepare"])
+        executor.exec()
