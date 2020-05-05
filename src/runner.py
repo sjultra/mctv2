@@ -52,6 +52,11 @@ def config_azure_env(secrets):
     os.environ["ARM_TENANT_ID"] = secrets["azure"]["tenant-id"]
 
 
+def config_devops_env(secrets):
+    os.environ["AZDO_PERSONAL_ACCESS_TOKEN"] = secrets["azuredevops"]["token"]
+    os.environ["AZDO_ORG_SERVICE_URL"] = secrets["azuredevops"]["service-url"]
+
+
 def config_gcp_env(secrets):
     with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
         gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
@@ -66,8 +71,12 @@ def get_azure_backend_config(key, secrets):
 
 
 def deploy_infrastructure(id, secrets, steps, config, workspace):
-    config_azure_env(secrets)
-    config_gcp_env(secrets)
+    if "azure" in secrets.keys():
+        config_azure_env(secrets)
+    if "gcp" in secrets.keys():
+        config_gcp_env(secrets)
+    if "azuredevops" in secrets.keys():
+        config_devops_env(secrets)
 
     tf_controller = Terraform(working_dir=workspace,
                               variables=config["parameters"])
