@@ -58,9 +58,12 @@ def config_devops_env(secrets):
 
 
 def config_gcp_env(secrets):
-    with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
-        gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
-    os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = '/tmp/gcp_credentials.json'
+    if secrets["gcp"]["key-path"]:
+        os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = secrets["gcp"]["key-path"]
+    else:
+        with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
+            gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
+    
 
 
 def get_azure_backend_config(key, secrets):
