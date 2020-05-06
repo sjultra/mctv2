@@ -62,13 +62,14 @@ class Configuration:
                     self.content["secrets"][category][key] = remote_secrets.get_secret(key_name).value
 
     def __populate_parameters(self):
-        if "env" not in self.content["script"]:
-            self.content["script"]["env"] = dict()
+        if "script" in self.content.keys():
+            if "env" not in self.content["script"]:
+                self.content["script"]["env"] = dict()
+            if "env" in self.content["secrets"].keys():
+                self.content["script"]["env"].update(self.content["secrets"]["env"])
+
         if "parameters" not in self.content["terraform"]:
             self.content["terraform"]["parameters"] = dict()
-
-        if "env" in self.content["secrets"].keys():
-            self.content["script"]["env"].update(self.content["secrets"]["env"])
         if "terraform" in self.content["secrets"].keys():
             self.content["terraform"]["parameters"].update(self.content["secrets"]["terraform"])
 

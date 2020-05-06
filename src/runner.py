@@ -63,7 +63,6 @@ def config_gcp_env(secrets):
     else:
         with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
             gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
-    
 
 
 def get_azure_backend_config(key, secrets):
