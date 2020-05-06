@@ -13,10 +13,20 @@ sudo bash ./utils/setup_env.sh
 {
     "deployment_id": "",
     "steps": ["prepare", "deploy", "cleanup", "destroy"],
-    "prepare": {
-        "script": "/path/to/script.sh",
-        "parameters": "--param 'test'"
+    "script": {
+        "env": {
+            "ENV_VAR": "This is a test env var"
+        },
+        "prepare": {
+            "path": "./test-infra/google-project-factory/pre_script.sh",
+            "parameters": "--param 'test'"
+        },
+        "cleanup": {
+            "path": "/path/to/cleanup/script.sh",
+            "parameters": "--param test"
+        }
     },
+
     "terraform": {
         "backend": {
             "type": "azurerm",
@@ -25,10 +35,6 @@ sudo bash ./utils/setup_env.sh
         "parameters": {
             "test_param": "ZZZZZZZZZZZZZ"
         }
-    },
-    "cleanup": {
-        "script": "/path/to/cleanup/script.sh",
-        "parameters": "--param test"
     }
 }
 ```
@@ -45,6 +51,12 @@ sudo bash ./utils/setup_env.sh
         }
     },
     "secrets": {
+        "terraform": {
+            "secret_param": "asdasdhasdb"
+        },
+        "env": {
+            "secret_env": "envu"
+        },
         "azure": {
             "subscription-id": "",
             "client-id": "",
