@@ -23,6 +23,8 @@ class Configuration:
 
         self.__resolve_custom_fields(parameters)
         self.__resolve_secrets()
+
+        self.__populate_parameters()
         self.__replace_parameters(parameters)
 
     def __parse_config(self):
@@ -58,6 +60,17 @@ class Configuration:
                 if not self.content["secrets"][category][key]:
                     key_name = category + '-' + key
                     self.content["secrets"][category][key] = remote_secrets.get_secret(key_name).value
+
+    def __populate_parameters(self):
+        if "env" not in self.content["script"]:
+            self.content["script"]["env"] = dict()
+        if "parameters" not in self.content["terraform"]:
+            self.content["terraform"]["parameters"] = dict()
+
+        if "env" in self.content["secrets"].keys():
+            self.content["script"]["env"].update(self.content["secrets"]["env"])
+        if "terraform" in self.content["secrets"].keys():
+            self.content["terraform"]["parameters"].update(self.content["secrets"]["terraform"])
 
     def __replace_parameters(self, parameters):
         if parameters.steps:

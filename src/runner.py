@@ -1,6 +1,6 @@
 from python_terraform import Terraform
 from mct_config import Configuration
-from script_exec import ScriptExecutor
+from script_exec import execute_script
 import argparse
 import os
 import base64
@@ -109,9 +109,8 @@ if __name__ == "__main__":
 
     config = Configuration(parameters.config_path, parameters.secrets_path, parameters)
 
-    if "prepare" in config.content["steps"] and "prepare" in config.content.keys():
-        executor = ScriptExecutor(config.content["prepare"])
-        executor.exec()
+    if "prepare" in config.content["steps"] and "prepare" in config.content["script"].keys():
+        execute_script(config.content["script"]["prepare"], config.content["script"]["env"])
 
     deploy_infrastructure(config.content["deployment_id"],
                           config.content["secrets"],
@@ -119,6 +118,5 @@ if __name__ == "__main__":
                           config.content["terraform"],
                           parameters.terraform_workspace)
 
-    if "cleanup" in config.content["steps"] and "cleanup" in config.content.keys():
-        executor = ScriptExecutor(config.content["prepare"])
-        executor.exec()
+    if "cleanup" in config.content["steps"] and "cleanup" in config.content["script"].keys():
+        execute_script(config.content["script"]["cleanup"], config.content["script"]["env"])
