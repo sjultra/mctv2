@@ -4,7 +4,9 @@ from script_exec import execute_script
 import argparse
 import os
 import base64
-
+from pathlib import Path
+import requests
+import json
 
 def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
@@ -72,6 +74,14 @@ def get_azure_backend_config(key, secrets):
             "sas_token": secrets["storage-account-sas"]}
 
 
+def configure_terraform_cloud_secrets(secrets):
+    secrets_entry = 'credentials "app.terraform.io" {0}'.format('{ token = "' + secrets["token"] + '" }')
+
+    Path("~/.terraform.d").mkdir(parents=True, exist_ok=True)
+    with open("~/.terraform.d/credentials.tfrc.json", "a") as terraform_config:
+        terraform_config.write(secrets_entry)
+
+
 def deploy_infrastructure(id, secrets, steps, config, workspace):
     if "azure" in secrets.keys():
         config_azure_env(secrets)
@@ -85,16 +95,24 @@ def deploy_infrastructure(id, secrets, steps, config, workspace):
 
     backend_config = None
     if "backend" in config.keys():
-        backend_config = get_azure_backend_config(config["backend"]["key"], secrets["azurerm-backend"])
+        if config["backend"]["type"] == "azurerm":
+            backend_config = get_azure_backend_config(config["backend"]["key"], secrets["azurerm-backend"])
     tf_controller.init(capture_output=False, backend_config=backend_config)
 
-    workspace_list = tf_controller.cmd('workspace', 'list')[1]
-    workspace_list = workspace_list.replace('\n', '').replace('*', '').split()
+    if config["backend"]["type"] == "azurerm":
+        workspace_list = tf_controller.cmd('workspace', 'list')[1]
+        workspace_list = workspace_list.replace('\n', '').replace('*', '').split()
 
-    if id not in workspace_list:
-        tf_controller.create_workspace(id)
+        if id not in workspace_list:
+            tf_controller.create_workspace(id)
+        tf_controller.set_workspace(id)
+    elif config["backend"]["type"] == "terraform-cloud":
+        url = "https://app.terraform.io/api/v2/organizations/{0}/workspaces/{1}".format(config["backend"]["org"], config["backend"]["workspace"])
+        header = {"Authorization": "Bearer {}".format(secrets["terraform-cloud-backend"]["token"]),
+                  "Content-Type": "application/vnd.api+json"}
+        data = {"data": {"type": "workspaces", "attributes": {"operations": False}}}
 
-    tf_controller.set_workspace(id)
+        requests.patch(url, data=json.dumps(data), headers=header)
 
     if "deploy" in steps:
         tf_controller.plan(capture_output=False)
@@ -102,7 +120,15 @@ def deploy_infrastructure(id, secrets, steps, config, workspace):
 
     if "destroy" in steps:
         tf_controller.destroy(capture_output=False)
-        tf_controller.delete_workspace(id)
+
+        if config["backend"]["type"] == "azurerm":
+            tf_controller.delete_workspace(id)
+        elif config["backend"]["type"] == "terraform-cloud":
+            url = "https://app.terraform.io/api/v2/organizations/{0}/workspaces/{1}".format(config["backend"]["org"], config["backend"]["workspace"])
+            header = {"Authorization": "Bearer {}".format(secrets["terraform-cloud-backend"]["token"]),
+                      "Content-Type": "application/vnd.api+json"}
+
+            requests.delete(url, headers=header)
 
 
 if __name__ == "__main__":
