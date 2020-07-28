@@ -7,6 +7,7 @@ import base64
 from pathlib import Path
 import requests
 import json
+import subprocess
 
 def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
@@ -14,6 +15,7 @@ def get_parameters():
     parser.add_argument('--config_path')
     parser.add_argument('--secrets_path')
     parser.add_argument('--terraform_workspace')
+    parser.add_argument('--tests_path')
     parser.add_argument('--steps')
     parser.add_argument('--id')
     parser.add_argument('--custom_fields')
@@ -117,6 +119,7 @@ def deploy_infrastructure(id, secrets, steps, config, workspace):
     if "deploy" in steps:
         tf_controller.plan(capture_output=False)
         tf_controller.apply(capture_output=False, skip_plan=True)
+        return tf_controller.output()
 
     if "destroy" in steps:
         tf_controller.destroy(capture_output=False)
@@ -129,6 +132,32 @@ def deploy_infrastructure(id, secrets, steps, config, workspace):
                       "Content-Type": "application/vnd.api+json"}
 
             requests.delete(url, headers=header)
+        return None
+
+
+def test_infrastructure(tests_path, deployment_output):
+    with open("/tmp/inspec_gcp_secret.json", "w") as secret_file:
+        secret_file.write(deployment_output['gcp_project_service_account']['value'])
+        secret_file.close()
+
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/tmp/inspec_gcp_secret.json"
+    os.environ["CHEF_LICENSE"] = "accept"
+
+    test_dirs = [ f.path for f in os.scandir(tests_path) if f.is_dir() ]    
+    for test_dir in test_dirs:
+        test_name = os.path.basename(os.path.normpath(test_dir))
+        print("Running test:", test_name)
+        try:
+            output = subprocess.check_output(["inspec", "exec", test_dir, "-t", "gcp://", "--input", "gcp_project_id={0}".format(deployment_output['gcp_project_id']['value'])], universal_newlines=True)
+            print(output)
+            print("Test result: PASS")
+        except subprocess.CalledProcessError as err:
+            output = err.output
+            print(err.output)
+            print("Test result: FAIL", "({0})".format(err.returncode))
+        finally:
+            with open(os.path.join(test_dir, "{0}_result.log".format(test_name)), 'w') as log_file:
+                log_file.write(output)
 
 
 if __name__ == "__main__":
@@ -140,11 +169,14 @@ if __name__ == "__main__":
     if "prepare" in config.content["steps"] and "prepare" in config.content["script"].keys():
         execute_script(config.content["script"]["prepare"], config.content["script"]["env"])
 
-    deploy_infrastructure(config.content["deployment_id"],
+    output = deploy_infrastructure(config.content["deployment_id"],
                           config.content["secrets"],
                           config.content["steps"],
                           config.content["terraform"],
                           parameters.terraform_workspace)
+
+    if 'deploy' in config.content["steps"] and parameters.tests_path:
+        test_infrastructure(parameters.tests_path, output)
 
     if "cleanup" in config.content["steps"] and "cleanup" in config.content["script"].keys():
         execute_script(config.content["script"]["cleanup"], config.content["script"]["env"])
