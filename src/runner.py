@@ -62,6 +62,12 @@ def config_devops_env(secrets):
 
 
 def config_gcp_env(secrets):
+    if secrets["gcp"]["service-account-url"]:
+        service_account = requests.get(secrets["gcp"]["service-account-url"], 
+                                       allow_redirects=True)
+        with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
+            gcp_secrets.write(service_account.content)
+        os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = '/tmp/gcp_credentials.json'
     if secrets["gcp"]["key-path"]:
         os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = secrets["gcp"]["key-path"]
     else:
