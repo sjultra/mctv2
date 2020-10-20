@@ -1,6 +1,7 @@
-from python_terraform import Terraform
 from mct_config import Configuration
 from script_exec import execute_script
+from environment import config_environment
+from terraform_provider import TerraformProvider
 import argparse
 import os
 import base64
@@ -9,16 +10,20 @@ import requests
 import json
 import subprocess
 
+from logger import Logger, log, setup_logs
+
 def get_parameters():
     parser = argparse.ArgumentParser(description="MCTv2 Alpha")
 
     parser.add_argument('--config_path')
     parser.add_argument('--secrets_path')
     parser.add_argument('--terraform_workspace')
+    parser.add_argument('--log_path')
     parser.add_argument('--tests_path')
     parser.add_argument('--steps')
     parser.add_argument('--id')
     parser.add_argument('--custom_fields')
+    parser.add_argument('--debug', dest='debug', action='store_true')
 
     return parser.parse_args()
 
@@ -31,9 +36,8 @@ def check_parameters(parameters):
         raise Exception("config_path parameter is empty")
     parameters.config_path = os.path.abspath(parameters.config_path)
 
-    if not parameters.secrets_path:
-        raise Exception("secrets_path parameter is empty")
-    parameters.secrets_path = os.path.abspath(parameters.secrets_path)
+    if parameters.secrets_path:
+        parameters.secrets_path = os.path.abspath(parameters.secrets_path)
 
     if not parameters.terraform_workspace:
         raise Exception("terraform_workspace parameter is empty")
@@ -41,8 +45,6 @@ def check_parameters(parameters):
 
     if not os.path.isfile(parameters.config_path):
         raise Exception("File {} does not exist".format(parameters.config_path))
-    if not os.path.isfile(parameters.secrets_path):
-        raise Exception("File {} does not exist".format(parameters.secrets_path))
     if not os.path.isdir(parameters.terraform_workspace):
         raise Exception("File {} does not exist".format(parameters.terraform_workspace))
 
@@ -61,20 +63,6 @@ def config_devops_env(secrets):
     os.environ["AZDO_ORG_SERVICE_URL"] = secrets["azuredevops"]["service-url"]
 
 
-def config_gcp_env(secrets):
-    if secrets["gcp"]["service-account-url"]:
-        service_account = requests.get(secrets["gcp"]["service-account-url"], 
-                                       allow_redirects=True)
-        with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
-            gcp_secrets.write(service_account.content)
-        os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = '/tmp/gcp_credentials.json'
-    if secrets["gcp"]["key-path"]:
-        os.environ["GOOGLE_CLOUD_KEYFILE_JSON"] = secrets["gcp"]["key-path"]
-    else:
-        with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
-            gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
-
-
 def get_azure_backend_config(key, secrets):
     return {"storage_account_name": secrets["storage-account-name"],
             "container_name": secrets["storage-account-container"],
@@ -91,15 +79,11 @@ def configure_terraform_cloud_secrets(secrets):
 
 
 def deploy_infrastructure(id, secrets, steps, config, workspace):
-    if "azure" in secrets.keys():
-        config_azure_env(secrets)
-    if "gcp" in secrets.keys():
-        config_gcp_env(secrets)
-    if "azuredevops" in secrets.keys():
-        config_devops_env(secrets)
-
+    config["parameters"]["id"] = id
     tf_controller = Terraform(working_dir=workspace,
                               variables=config["parameters"])
+
+    
 
     backend_config = None
     if "backend" in config.keys():
@@ -167,22 +151,41 @@ def test_infrastructure(tests_path, deployment_output):
 
 
 if __name__ == "__main__":
+    os.system('clear')
+    print("MCTv2")
     parameters = get_parameters()
     parameters = check_parameters(parameters)
+    setup_logs(parameters.log_path, parameters.id, parameters.debug)
 
-    config = Configuration(parameters.config_path, parameters.secrets_path, parameters)
+    config = Configuration()
+    config.parse_config(parameters.config_path, parameters.secrets_path)
+    config.resolve_custom_fields(parameters)
+    config.replace_parameters(parameters)
+    config.resolve_secrets()
 
-    if "prepare" in config.content["steps"] and "prepare" in config.content["script"].keys():
-        execute_script(config.content["script"]["prepare"], config.content["script"]["env"])
+    config_environment(config.content, parameters.terraform_workspace)
 
-    output = deploy_infrastructure(config.content["deployment_id"],
-                          config.content["secrets"],
-                          config.content["steps"],
-                          config.content["terraform"],
-                          parameters.terraform_workspace)
+    provider = TerraformProvider(config.content, parameters.terraform_workspace)
 
-    if 'deploy' in config.content["steps"] and parameters.tests_path:
-        test_infrastructure(parameters.tests_path, output)
+    for step in config.content["steps"]:
+        if step == "deploy":
+            provider.deploy()
+        if step == "destroy":
+            provider.destroy()
 
-    if "cleanup" in config.content["steps"] and "cleanup" in config.content["script"].keys():
-        execute_script(config.content["script"]["cleanup"], config.content["script"]["env"])
+
+
+    # if "prepare" in config.content["steps"] and "prepare" in config.content["script"].keys():
+    #     execute_script(config.content["script"]["prepare"], config.content["script"]["env"])
+
+    #output = deploy_infrastructure(parameters.id,
+    #                      config.content["secrets"],
+    #                      config.content["steps"],
+    #                      config.content["terraform"],
+    #                      parameters.terraform_workspace)
+
+    # if 'deploy' in config.content["steps"] and parameters.tests_path:
+    #     test_infrastructure(parameters.tests_path, output)
+
+    # if "cleanup" in config.content["steps"] and "cleanup" in config.content["script"].keys():
+    #     execute_script(config.content["script"]["cleanup"], config.content["script"]["env"])

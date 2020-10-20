@@ -1,5 +1,7 @@
 from azure.keyvault.secrets import SecretClient
 from azure.identity import ClientSecretCredential
+from azure.core.exceptions import ResourceNotFoundError, ClientAuthenticationError
+from logger import log
 
 
 class SecretProvider():
@@ -15,6 +17,7 @@ class SecretProvider():
 
 class AzureKeyVault(SecretProvider):
     def __init__(self, provider_details):
+        log.info("Using secret provider: Azure KeyVault")
         super().__init__(provider_details)
         self.__auth_azure()
 
@@ -31,4 +34,15 @@ class AzureKeyVault(SecretProvider):
         self.__provider.set_secret(key_name, key_value)
 
     def get_secret(self, key_name):
-        return self.__provider.get_secret(key_name)
+        try:
+            secret_name = key_name.replace('.', '-').replace('_', '-')
+            log.info("Looking for secret: {} [{}]".format(secret_name, key_name))
+            secret_value = self.__provider.get_secret(secret_name).value
+            log.info("Secret {} found".format(key_name))
+            return secret_value
+        except ResourceNotFoundError:
+            log.error("Cannot find secret: {}".format(key_name))
+            raise
+        except ClientAuthenticationError:
+            log.error("Cannot authenticate, the credentials are invalid")
+            raise
