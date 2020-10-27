@@ -1,7 +1,8 @@
 from python_terraform import Terraform
 from backend import get_backend_provider
-from logger import log
+from logger import log, artifact
 from utils import stage
+import json
 
 
 class TerraformProvider():
@@ -21,6 +22,9 @@ class TerraformProvider():
         
         self._backend_provider.init_remote_backend()
         self._controller.apply(capture_output=False, skip_plan=True)
+        output = self._controller.output()
+        artifact.create("terraform_output", content=json.dumps(output))
+
 
     def destroy(self):
         log.info("Destroying terraform infrastructure")
