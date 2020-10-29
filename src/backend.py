@@ -102,9 +102,11 @@ class TerraformCloudBackend(BackendProvider):
         with open(backend_config_path, "w") as config_file:
             config_file.write(backend_config)
 
-        secrets_path = os.path.join(os.environ["HOME"], ".terraform.d")
-        Path(secrets_path).mkdir(parents=True, exist_ok=True)
-        secrets_file = os.path.join(secrets_path, "credentials.tfrc.json")
+        #secrets_path = os.path.join(os.environ["HOME"], ".terraform.d")
+        #Path(secrets_path).mkdir(parents=True, exist_ok=True)
+
+        secrets_file = os.path.join(self._terraform_workspace, "credentials.tfrc.json")
+        os.environ['TF_CLI_CONFIG_FILE'] = secrets_file
         log.info("Creating backend secrets file at: {}".format(secrets_file))
         with open(secrets_file, "w") as terraform_config:
             terraform_config.write(secrets_config)
