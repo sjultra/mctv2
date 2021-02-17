@@ -14,7 +14,7 @@ class TerraformProvider():
         self._controller = Terraform(working_dir=terraform_workspace, 
                                      variables=configuration["terraform"]["parameters"])
 
-        self._controller.init(capture_output=False)
+        self._controller.init(capture_output=False, force_copy=IsFlagged)
 
     @stage("Terraform deploy")
     def deploy(self):
