@@ -1,4 +1,4 @@
-from python_terraform import Terraform
+from python_terraform import Terraform, IsFlagged
 from backend import get_backend_provider
 from logger import log, artifact
 from utils import stage
