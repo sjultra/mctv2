@@ -6,6 +6,7 @@ import requests
 
 def config_environment(configuration, terraform_workspace):
     GCPSetup(configuration, terraform_workspace)
+    AzureSetup(configuration, terraform_workspace)
 
 def get_dict_value(dictionary, path):
     val = dictionary
@@ -81,3 +82,26 @@ class GCPSetup(EnvironmentSetup):
         #    with open('/tmp/gcp_credentials.json', 'w') as gcp_secrets:
         #        gcp_secrets.write(base64.b64decode(secrets["gcp"]["key-value"]).decode('utf-8'))
 
+
+class AzureSetup(EnvironmentSetup):
+    _parameters = {
+        "required": [
+            "secrets.env.azure.client-id",
+            "secrets.env.azure.tenant-id",
+            "secrets.env.azure.client-secret",
+            "secrets.env.azure.subscription-id"
+        ],
+    }
+
+    def __init__(self, configuration, terraform_workspace):
+        self._provider_name = 'Azure'
+        
+        super().__init__(configuration, terraform_workspace)
+
+    def _configure_environment(self):
+        azure_params = self._configuration["secrets"]["env"]["azure"]
+
+        os.environ["ARM_CLIENT_ID"] = azure_params["client-id"]
+        os.environ["ARM_CLIENT_SECRET"] = azure_params["client-secret"]
+        os.environ["ARM_SUBSCRIPTION_ID"] = azure_params["subscription-id"]
+        os.environ["ARM_TENANT_ID"] = azure_params["tenant-id"]
