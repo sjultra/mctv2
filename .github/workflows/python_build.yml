@@ -1,7 +1,7 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# Installs Python dependencies, runs tests and lint, and builds the MCTv2 runner package.
+# Runs on push to master; output is the runner binary.
 
-name: MCTv2 Runner Release
+name: "[E-STALE] MCTv2 Runner Release"
 
 on:
   push:
